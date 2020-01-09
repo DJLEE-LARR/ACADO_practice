@@ -1,0 +1,89 @@
+% LETS DISCRETIZE!
+clc; clear; close all;
+   
+BEGIN_ACADO;
+
+    acadoSet('problemname','multirotor');
+
+    DifferentialState x y z phi theta psi;
+    DifferentialState xdot ydot zdot;
+    DifferentialState COST;
+    
+    Control Ft;
+%     Control tau_x;
+%     Control tau_y;
+%     Control tau_z;
+    Control phidot_d;
+    Control thetadot_d;
+    Control psidot_d;
+
+    Re3 = [sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta);
+       cos(phi)*sin(psi)*sin(theta) - cos(psi)*sin(phi);
+       cos(phi)*cos(theta)];
+
+    %% parameters
+
+    m_ = 1.0;
+%     I_ = diag([0.01 0.01 0.01]);
+    g_ = 9.81;
+
+%         I_x = I_(1,1); I_y = I_(2,2); I_z = I_(3,3);
+    
+    %% Differential Equation
+    f = acado.DifferentialEquation();
+
+    f.add(dot(x) == xdot);
+    f.add(dot(y) == ydot);
+    f.add(dot(z) == zdot);
+    
+    f.add(dot(phi) == phidot_d);
+    f.add(dot(theta) == thetadot_d);
+    f.add(dot(psi) == psidot_d);
+    
+    f.add(dot(xdot) == Ft/m_*Re3(1,1));
+    f.add(dot(ydot) == Ft/m_*Re3(2,1));
+    f.add(dot(zdot) == Ft/m_*Re3(3,1) - g_);
+
+    %% Optimal Control Problem
+    t0 = 0.0; tf = 10.0; dt = 0.05;
+    ocp = acado.OCP(0.0, 10.0, (tf-t0)/dt);
+
+    S = diag([1 1 1 1 ...
+              1 1 1 1]);
+    h = {Ft, phidot_d, thetadot_d, psidot_d, ...
+         x, y, z, psi};
+    r = [m_*g_, 0, 0, 0, ...
+        1.0, 2.0, 3.0, 0.0];
+    
+    ocp.minimizeMayerTerm(COST);
+    
+%     ocp.minimizeLSQ(S,h,r);
+    
+    ocp.subjectTo( f );
+    ocp.subjectTo( 'AT_START', x == 0.0);
+    ocp.subjectTo( 'AT_START', y == 0.0);
+    ocp.subjectTo( 'AT_START', z == 0.0);
+    ocp.subjectTo( 'AT_START', phi == 0.0);
+    ocp.subjectTo( 'AT_START', theta == 0.0);
+    ocp.subjectTo( 'AT_START', psi == 0.0);
+    ocp.subjectTo( 'AT_START', xdot == 0.0);
+    ocp.subjectTo( 'AT_START', ydot == 0.0);
+    ocp.subjectTo( 'AT_START', zdot == 0.0);
+    ocp.subjectTo( 'AT_START', COST == 0.0);
+    
+    ocp.subjectTo( 0.0 <= Ft <= 20.0 );
+%     ocp.subjectTo( -5.0 <= phidot_d <= 5.0);
+%     ocp.subjectTo( -5.0 <= thetadot_d <= 5.0);
+%     ocp.subjectTo( -5.0 <= psidot_d <= 5.0);
+
+    %% Optimization Algorithm
+    algo = acado.OptimizationAlgorithm(ocp);
+    algo.set( 'KKT_TOLERANCE', 1e-5 );
+%     algo.initializeControls([0 m_*g_ 0 0 0]);
+    
+END_ACADO;
+
+% RUN THE TEST
+out = multirotor_RUN();
+
+draw;
