@@ -1,5 +1,9 @@
 clc; clear; close all;
    
+% QUESTION
+% 1) When do we need Hessian matrix?
+% 2) Why Hessian matrix become non-symmetric?
+
 BEGIN_ACADO;
 
     acadoSet('problemname','multirotor_full');
@@ -7,10 +11,7 @@ BEGIN_ACADO;
     DifferentialState x y z phi theta psi;
     DifferentialState xdot ydot zdot om_x om_y om_z;
 
-    Control Ft;
-    Control tau_x;
-    Control tau_y;
-    Control tau_z;
+    Control Ft tau_x tau_y tau_z;
 
     Re3 = [sin(phi)*sin(psi) + cos(phi)*cos(psi)*sin(theta);
        cos(phi)*sin(psi)*sin(theta) - cos(psi)*sin(phi);
@@ -39,9 +40,10 @@ BEGIN_ACADO;
     f.add(dot(theta) == Q(2,:)*[om_x;om_y;om_z]);
     f.add(dot(psi) == Q(3,:)*[om_x;om_y;om_z]);
     
-    f.add(dot(xdot) == (Ft/m_*Re3(1,1)));
-    f.add(dot(ydot) == (Ft/m_*Re3(2,1)));
-    f.add(dot(zdot) == (Ft/m_*Re3(3,1) - g_));
+    % disturbance added
+    f.add(dot(xdot) == (Ft/m_*Re3(1,1) + 3.0));
+    f.add(dot(ydot) == (Ft/m_*Re3(2,1) + 3.0));
+    f.add(dot(zdot) == (Ft/m_*Re3(3,1) - g_ + 3.0));
 %     f.add(dot(zdot) == (Ft/m_*Re3(3,1)));
 
     f.add(dot(om_x) == 1/I_(1,1)*(-coriolis(1,1) + tau_x));
@@ -49,14 +51,14 @@ BEGIN_ACADO;
     f.add(dot(om_z) == 1/I_(3,3)*(-coriolis(3,1) + tau_z));
     
     %% Optimal Control Problem
-    t0 = 0.0; tf = 10.0; dt = 0.05;
+    t0 = 0.0; tf = 5.0; dt = 0.05;
     ocp = acado.OCP(0.0, 10.0, (tf-t0)/dt);
 
     S = diag([1 1 1 1 ...
-              1 1 1 1]);
+              3 3 3 1]);
     h = {Ft, tau_x, tau_y, tau_z, ...
          x, y, z, psi};
-    r = [m_*g_, 0, 0, 0, ...
+    r = [m_*(g_ - 3.0), 0, 0, 0, ...
         1.0, 2.0, 3.0, 0.0];
 
 %     Se = diag([20 20 40 10]);
@@ -81,9 +83,7 @@ BEGIN_ACADO;
     ocp.subjectTo( 'AT_START', om_z == 0.0);
     
     ocp.subjectTo( 0.0 <= Ft <= 20.0 );
-%     ocp.subjectTo( -5.0 <= phidot_d <= 5.0);
-%     ocp.subjectTo( -5.0 <= thetadot_d <= 5.0);
-%     ocp.subjectTo( -5.0 <= psidot_d <= 5.0);
+
 
     %% Optimization Algorithm
     algo = acado.OptimizationAlgorithm(ocp);

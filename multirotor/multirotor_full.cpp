@@ -81,7 +81,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     DMatrix acadodata_M1;
     acadodata_M1.read( "multirotor_full_data_acadodata_M1.txt" );
     DVector acadodata_v1(8);
-    acadodata_v1(0) = 9.810000E+00;
+    acadodata_v1(0) = 6.810000E+00;
     acadodata_v1(1) = 0;
     acadodata_v1(2) = 0;
     acadodata_v1(3) = 0;
@@ -90,7 +90,7 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     acadodata_v1(6) = 3;
     acadodata_v1(7) = 0;
     DVector acadodata_v2(8);
-    acadodata_v2(0) = 9.810000E+00;
+    acadodata_v2(0) = 6.810000E+00;
     acadodata_v2(1) = 0;
     acadodata_v2(2) = 0;
     acadodata_v2(3) = 0;
@@ -105,14 +105,14 @@ void mexFunction( int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[] )
     acadodata_f1 << dot(phi) == (cos(phi)*om_z*tan(theta)+om_x+om_y*sin(phi)*tan(theta));
     acadodata_f1 << dot(theta) == ((-sin(phi))*om_z+cos(phi)*om_y);
     acadodata_f1 << dot(psi) == (1/cos(theta)*om_y*sin(phi)+cos(phi)/cos(theta)*om_z);
-    acadodata_f1 << dot(xdot) == (cos(phi)*cos(psi)*sin(theta)+sin(phi)*sin(psi))*Ft;
-    acadodata_f1 << dot(ydot) == (cos(phi)*sin(psi)*sin(theta)-cos(psi)*sin(phi))*Ft;
-    acadodata_f1 << dot(zdot) == (-9.81000000000000049738e+00+Ft*cos(phi)*cos(theta));
+    acadodata_f1 << dot(xdot) == ((cos(phi)*cos(psi)*sin(theta)+sin(phi)*sin(psi))*Ft+3.00000000000000000000e+00);
+    acadodata_f1 << dot(ydot) == ((cos(phi)*sin(psi)*sin(theta)-cos(psi)*sin(phi))*Ft+3.00000000000000000000e+00);
+    acadodata_f1 << dot(zdot) == (3.00000000000000000000e+00-9.81000000000000049738e+00+Ft*cos(phi)*cos(theta));
     acadodata_f1 << dot(om_x) == (1.00000000000000002082e-02*om_y*om_z-1.00000000000000002082e-02*om_z*om_y+tau_x)*1.00000000000000000000e+02;
     acadodata_f1 << dot(om_y) == (-1.00000000000000002082e-02*om_x*om_z+1.00000000000000002082e-02*om_z*om_x+tau_y)*1.00000000000000000000e+02;
     acadodata_f1 << dot(om_z) == (1.00000000000000002082e-02*om_x*om_y-1.00000000000000002082e-02*om_y*om_x+tau_z)*1.00000000000000000000e+02;
 
-    OCP ocp1(0, 10, 200);
+    OCP ocp1(0, 10, 100);
     ocp1.minimizeLSQ(acadodata_M1, acadodata_f2, acadodata_v2);
     ocp1.subjectTo(acadodata_f1);
     ocp1.subjectTo(AT_START, x == 0.00000000000000000000e+00);
